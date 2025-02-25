@@ -1,0 +1,4 @@
+.env.*
+.env.restore.*
+!.env.example
+!.env.restore.example
