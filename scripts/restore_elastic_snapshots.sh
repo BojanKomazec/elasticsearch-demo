@@ -154,6 +154,21 @@ build_list_of_features_to_include() {
     echo $features_to_restore
 }
 
+get_user_input_include_global_state() {
+    local include_global_state=""
+
+    echo "Default 'include_global_state' value: $DEFAULT_INCLUDE_GLOBAL_STATE" >&2
+
+    # Prompt user for features to include e.g. transform,watcher
+    read -p "Enter 'include_global_state' value (true or false or leave empty for default value): " include_global_state
+
+    if [[ -z "$include_global_state" ]]; then
+        include_global_state="$DEFAULT_INCLUDE_GLOBAL_STATE"
+    fi
+
+    echo $include_global_state
+}
+
 main() {
     # # Check if username and password were provided
     # if [ "$#" -ne 2 ]; then
@@ -233,19 +248,23 @@ main() {
             echo
             echo $response | jq -r '.snapshots[0].indices[]' | sort
 
-            EXCLUDED_INDICES=$(build_list_of_indices_to_exclude)
             echo
+            EXCLUDED_INDICES=$(build_list_of_indices_to_exclude)
             echo "Indices to be excluded: $EXCLUDED_INDICES"
 
-            FEATURES_TO_RESTORE=$(build_list_of_features_to_include)
             echo
+            FEATURES_TO_RESTORE=$(build_list_of_features_to_include)
             echo "Features to be restored: $FEATURES_TO_RESTORE"
+
+            echo
+            INCLUDE_GLOBAL_STATE=$(get_user_input_include_global_state)
+            echo "Include global state: $INCLUDE_GLOBAL_STATE"
 
             local request_body="
             {
                 \"indices\": \"*,$EXCLUDED_INDICES\",
                 \"ignore_unavailable\": true,
-                \"include_global_state\": true,
+                \"include_global_state\": $INCLUDE_GLOBAL_STATE,
                 \"feature_states\": [\"$FEATURES_TO_RESTORE\"]
             }"
             echo
