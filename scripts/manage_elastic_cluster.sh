@@ -616,6 +616,50 @@ unenroll_agents() {
         }"
 }
 
+# The Fleet server is a special agent that is responsible for managing other agents.
+# This command will retrieve a list of all fleet server hosts configured in your Elastic environment.
+# The response will include details about each fleet server host, such as its ID, host URL, and whether it's a default host.
+show_fleet_server_details() {
+    echo && echo "Fetching Fleet server details (using Kibana API)..."
+
+    response=$(curl \
+        -s \
+        -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
+        -X GET \
+        "$KIBANA_HOST/api/fleet/fleet_server_hosts" \
+        -H 'Content-Type: application/json' \
+        -H 'kbn-xsrf: true')
+
+    echo $response | jq .
+}
+
+delete_fleet_server_host() {
+    echo && echo "Deleting Fleet server host (using Kibana API)..."
+
+    local fleet_server_host_id=""
+    echo
+    echo "Fleet server host deletion"
+    echo
+
+    # Prompt user for fleet server host ID
+    read -p "Enter Fleet server host ID: " fleet_server_host_id
+
+    if [[ -z "$fleet_server_host_id" ]]; then
+        echo "Fleet server host ID is required!"
+        return 1
+    fi
+
+    echo "Deleting Fleet server host: $fleet_server_host_id..." >&2
+
+    curl \
+        -s \
+        -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
+        -X DELETE \
+        "$KIBANA_HOST/api/fleet/fleet_server_hosts/$fleet_server_host_id" \
+        -H 'Content-Type: application/json' \
+        -H 'kbn-xsrf: true'
+}
+
 main_menu() {
     local menu_options=(
         "cluster"
@@ -821,6 +865,8 @@ fleet_menu() {
     local menu_options=(
         "list agents"
         "unenroll agents"
+        "show fleet server details"
+        "delete fleet server host"
         "EXIT"
     )
 
@@ -838,6 +884,12 @@ fleet_menu() {
                         ;;
                     "unenroll agents")
                         unenroll_agents
+                        ;;
+                    "show fleet server details")
+                        show_fleet_server_details
+                        ;;
+                    "delete fleet server host")
+                        delete_fleet_server_host
                         ;;
                     "EXIT")
                         echo "Exiting..."
@@ -903,6 +955,10 @@ main() {
     # echo "KIBANA_PASSWORD=$KIBANA_PASSWORD"
     echo "ES_HOST=$ES_HOST"
     echo "KIBANA_HOST=$KIBANA_HOST"
+
+    if [[ ! $KIBANA_HOST =~ ^https:// ]]; then
+        KIBANA_HOST="https://$KIBANA_HOST"
+    fi
 
     main_menu
 
