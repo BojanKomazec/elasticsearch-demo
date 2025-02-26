@@ -573,14 +573,14 @@ get_agent_ids() {
 # The bulk_unenroll operation is a Fleet-specific function, and Fleet is managed
 # through Kibana's interface. While Elasticsearch is used for storing agent data,
 # the management operations for Fleet are handled by Kibana's API
-unroll_agents() {
-    echo && echo "Unrolling Fleet agents (using Kibana API)..."
+unenroll_agents() {
+    echo && echo "Unenrolling Fleet agents (using Kibana API)..."
 
     local fleet_agent_ids_array=($(get_agent_ids))
     echo "fleet_agent_ids_array: ${fleet_agent_ids_array[@]}"
 
     if [ ${#fleet_agent_ids_array[@]} -eq 0 ]; then
-        echo "No snapshot repositories found!"
+        echo "No Fleet agents found!"
         return 1
     fi
 
@@ -593,11 +593,11 @@ unroll_agents() {
     local agent_ids_json_array=$(printf '%s\n' "${fleet_agent_ids_array[@]}" | jq -R . | jq -s .)
     echo "agent_ids_json_array = $agent_ids_json_array"
 
-    # Test for dry run. Comment out the following line to actually unroll agents:
+    # Test for dry run. Comment out the following line to actually unenroll agents:
     agent_ids_json_array="[]"
     echo "agent_ids_json_array = $agent_ids_json_array"
 
-    echo "Sendind POST request to unroll agents..."
+    echo "Sendind POST request to unenroll agents..."
 
     # Output can look like this:
     # {"actionId":"b97c1e24-2d97-4b47-910d-290fa1a13425"}
@@ -820,7 +820,7 @@ snapshots_menu() {
 fleet_menu() {
     local menu_options=(
         "list agents"
-        "unroll agents"
+        "unenroll agents"
         "EXIT"
     )
 
@@ -836,8 +836,8 @@ fleet_menu() {
                         # list_agents
                         list_agents_kibana_endpoint
                         ;;
-                    "unroll agents")
-                        unroll_agents
+                    "unenroll agents")
+                        unenroll_agents
                         ;;
                     "EXIT")
                         echo "Exiting..."
