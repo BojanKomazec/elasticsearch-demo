@@ -514,8 +514,116 @@ delete_data_stream() {
         -H 'Content-Type: application/json'
 }
 
+list_agents() {
+    echo && echo "Fetching Fleet agents..."
+    # Get the agents in the cluster
+    response=$(curl \
+        -s \
+        -u "$USERNAME:$PASSWORD" \
+        -X GET \
+        "$ES_HOST/.fleet-agents/_search?pretty" \
+        -H "Content-Type: application/json" \
+        -d \
+        '{
+            "query": {
+                "match_all": {}
+            },
+            "_source": ["agent_id"],
+            "size": 10000
+        }')
+
+    echo && echo "Fleet agents count:"
+    echo $response | jq -r '.hits.total.value'
+
+    echo && echo "Fleet agents id:"
+    echo $response | jq -r '.hits.hits[] | ._id'
+}
+
+# The same as list_agents, but with using a different endpoint
+# Use ?kuery=status:offline to get offline agents
+list_agents_kibana_endpoint() {
+    echo && echo "Fetching Fleet agents (using Kibana API)..."
+
+    response=$(curl \
+        -s \
+        -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
+        -X GET \
+        "$KIBANA_HOST/api/fleet/agents?perPage=100" \
+        -H 'Content-Type: application/json' \
+        -H 'kbn-xsrf: true')
+
+    echo $response | jq -r '.list[] | .id + " " + .status'
+}
+
+get_agent_ids() {
+    echo && echo "Fetching Fleet agent IDs (using Kibana API)..." >&2
+
+    response=$(curl \
+        -s \
+        -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
+        -X GET \
+        "$KIBANA_HOST/api/fleet/agents?perPage=100" \
+        -H 'Content-Type: application/json' \
+        -H 'kbn-xsrf: true')
+
+    local agent_ids_array=($(echo $response | jq -r '.list[] | .id'))
+    echo "${agent_ids_array[@]}"
+}
+
+# The bulk_unenroll operation is a Fleet-specific function, and Fleet is managed
+# through Kibana's interface. While Elasticsearch is used for storing agent data,
+# the management operations for Fleet are handled by Kibana's API
+unroll_agents() {
+    echo && echo "Unrolling Fleet agents (using Kibana API)..."
+
+    local fleet_agent_ids_array=($(get_agent_ids))
+    echo "fleet_agent_ids_array: ${fleet_agent_ids_array[@]}"
+
+    if [ ${#fleet_agent_ids_array[@]} -eq 0 ]; then
+        echo "No snapshot repositories found!"
+        return 1
+    fi
+
+    echo && echo "Fleet agent IDs: "
+    for agent_id in "${fleet_agent_ids_array[@]}"; do
+        echo $agent_id
+    done
+
+    # Convert array to JSON array
+    local agent_ids_json_array=$(printf '%s\n' "${fleet_agent_ids_array[@]}" | jq -R . | jq -s .)
+    echo "agent_ids_json_array = $agent_ids_json_array"
+
+    # Test for dry run. Comment out the following line to actually unroll agents:
+    agent_ids_json_array="[]"
+    echo "agent_ids_json_array = $agent_ids_json_array"
+
+    echo "Sendind POST request to unroll agents..."
+
+    # Output can look like this:
+    # {"actionId":"b97c1e24-2d97-4b47-910d-290fa1a13425"}
+    curl \
+        -s \
+        -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
+        -X POST \
+        "$KIBANA_HOST/api/fleet/agents/bulk_unenroll" \
+        -H 'Content-Type: application/json' \
+        -H 'kbn-xsrf: true' \
+        -d \
+        "{
+            \"agents\": $agent_ids_json_array,
+            \"force\": true,
+            \"revoke\": true
+        }"
+}
+
 main_menu() {
-    local menu_options=("cluster" "snapshots" "indices" "EXIT")
+    local menu_options=(
+        "cluster"
+        "snapshots"
+        "indices"
+        "fleet"
+        "EXIT"
+    )
 
     while true; do
         echo
@@ -533,6 +641,9 @@ main_menu() {
                         ;;
                     "indices")
                         indices_menu
+                        ;;
+                    "fleet")
+                        fleet_menu
                         ;;
                     "EXIT")
                         echo "Exiting..."
@@ -706,6 +817,44 @@ snapshots_menu() {
     done
 }
 
+fleet_menu() {
+    local menu_options=(
+        "list agents"
+        "unroll agents"
+        "EXIT"
+    )
+
+    while true; do
+        echo
+        echo "Please select an option:"
+
+        select option in "${menu_options[@]}"; do
+            if [[ -n "$option" ]]; then
+                echo "Selected option: $option"
+                case $option in
+                    "list agents")
+                        # list_agents
+                        list_agents_kibana_endpoint
+                        ;;
+                    "unroll agents")
+                        unroll_agents
+                        ;;
+                    "EXIT")
+                        echo "Exiting..."
+                        return 0
+                        ;;
+                    *)
+                        echo "Invalid option"
+                        ;;
+                esac
+                break
+            else
+                echo "Invalid selection. Please choose a valid option."
+            fi
+        done
+    done
+}
+
 print_usage() {
     echo "Usage: $0 <environment>"
     echo "environment: test, prod"
@@ -750,7 +899,10 @@ main() {
 
     # echo "USERNAME=$USERNAME"
     # echo "PASSWORD=$PASSWORD"
+    # echo "KIBANA_USERNAME=$KIBANA_USERNAME"
+    # echo "KIBANA_PASSWORD=$KIBANA_PASSWORD"
     echo "ES_HOST=$ES_HOST"
+    echo "KIBANA_HOST=$KIBANA_HOST"
 
     main_menu
 
