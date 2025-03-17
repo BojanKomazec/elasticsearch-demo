@@ -1,13 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
+DEFAULT_IGNORE_UNAVAILABLE=false
+DEFAULT_INCLUDE_GLOBAL_STATE=false
+DEFAULT_INCLUDE_ALIASES=true
 
 
 # Function to get all SLM (Snapshot Lifecycle Management) policies dynamically
 get_slm_policies() {
-    curl -s -u "$USERNAME:$PASSWORD" -X GET "$ORIGIN_ES_HOST/_slm/policy?pretty" | jq -r 'keys[]'
+    curl \
+        -s \
+        -u "$USERNAME:$PASSWORD" \
+        -X GET \
+        "$ORIGIN_ES_HOST/_slm/policy?pretty" \
+        | jq -r 'keys[]'
 }
 
 # Function to list available snapshots for a specific policy
@@ -41,8 +48,13 @@ get_latest_snapshot_for_policy() {
 #   \"rename_replacement\": \"\1_restored\",
 #   \"include_aliases\": false,
 #
-# ignore_unavailable: true - request ignores any index or data stream in indices that’s missing from the snapshot
-# include_global_state: true - restores cluster-wide settings. These include index templates, ingest pipelines, and more. Index templates are required for restoring data streams.
+# ignore_unavailable: true - request ignores any index or data stream in indices that’s missing from the snapshot.
+# The default value for ignore_unavailable is false. This means that by default, Elasticsearch will fail the
+# restore operation if any specified index is missing or closed, ensuring data integrity but potentially
+# interrupting the restore process.
+#
+# include_global_state: true - restores cluster-wide settings. These include index templates, ingest pipelines,
+#   and more. Index templates are required for restoring data streams.
 #
 # Response in case of success:
 # {
@@ -90,7 +102,7 @@ restore_snapshot() {
 # .internal.alerts-observability.metrics.alerts-default-000001                         0  DONE  100.0%  100.0%
 # .internal.alerts-observability.metrics.alerts-default-000001                         1  DONE  0.0%    0.0%
 check_restore_progress() {
-    echo "Monitoring restore progress..."
+    echo && echo "Monitoring restore progress..." && echo
 
     while true; do
         # Returned JSON is a list of indices where each index info contains the list of shards.
@@ -101,7 +113,12 @@ check_restore_progress() {
         #   TRANSLOG - Replaying transaction log.
         #   FINALIZE - Cleanup.
         #   DONE - Complete.
-        progress=$(curl -s -u "$USERNAME:$PASSWORD" -X GET "$TARGET_ES_HOST/_recovery" | jq -r '[.[] | .shards[].stage] | unique | @csv')
+        progress=$(curl \
+            -s \
+            -u "$USERNAME:$PASSWORD" \
+            -X GET "$TARGET_ES_HOST/_recovery" \
+            | jq -r '[.[] | .shards[].stage] | unique | @csv'
+        )
         echo "Current restore stages: $progress"
 
         if [[ "$progress" == '"DONE"' ]]; then
@@ -114,7 +131,36 @@ check_restore_progress() {
 }
 
 check_cluster_health() {
-    curl -s -u "$USERNAME:$PASSWORD" -X GET "$TARGET_ES_HOST/_cluster/health?pretty"
+    echo && echo "Checking cluster health..." && echo
+
+    response=$(curl \
+        -s \
+        -u "$USERNAME:$PASSWORD" \
+        -X GET \
+        "$TARGET_ES_HOST/_cluster/health?pretty" \
+        -H "Content-Type: application/json")
+    echo $response | jq .
+}
+
+build_list_of_indices_to_include() {
+    local included_indices=""
+    local DEFAULT_INCLUDED_INDICES="*"
+
+    # Redirecting to stderr (>&2) flushes output immediately
+    echo >&2
+    echo "Default indices to include: $DEFAULT_INCLUDED_INDICES" >&2
+
+    # Prompt user for indices to include e.g. .alerts-observability-*,.transform-notifications-*
+    read -p "Enter a comma-separated list of indices to include in the restore operation (leave empty for all): " user_included_indices
+
+    # Merge DEFAULT_INCLUDED_INDICES and user_included_indices
+    if [[ -n "$user_included_indices" ]]; then
+        included_indices="$user_included_indices"
+    else
+        included_indices="$DEFAULT_INCLUDED_INDICES"
+    fi
+
+    echo "$included_indices"
 }
 
 build_list_of_indices_to_exclude() {
@@ -169,7 +215,91 @@ get_user_input_include_global_state() {
     echo $include_global_state
 }
 
+get_user_input_ignore_unavailable() {
+    local ignore_unavailable=""
+
+    echo "Default 'ignore_unavailable' value: $DEFAULT_IGNORE_UNAVAILABLE" >&2
+
+    # Prompt user for features to include e.g. transform,watcher
+    read -p "Enter 'ignore_unavailable' value (true or false or leave empty for default value): " ignore_unavailable
+
+    if [[ -z "$ignore_unavailable" ]]; then
+        ignore_unavailable="$DEFAULT_IGNORE_UNAVAILABLE"
+    fi
+
+    echo $ignore_unavailable
+}
+
+get_user_input_include_aliases() {
+    local include_aliases=""
+
+    echo "Default 'include_aliases' value: $DEFAULT_INCLUDE_ALIASES" >&2
+
+    # Prompt user for features to include e.g. transform,watcher
+    read -p "Enter 'include_aliases' value (true or false or leave empty for default value - true): " include_aliases
+
+    if [[ -z "$include_aliases" ]]; then
+        include_aliases="$DEFAULT_INCLUDE_ALIASES"
+    fi
+
+    echo $include_aliases
+}
+
+get_user_input_rename_pattern() {
+    local rename_pattern=""
+
+    # Prompt user for rename pattern e.g. (.+)
+    read -p "Enter 'rename_pattern' value (leave empty for none): " rename_pattern
+
+    echo $rename_pattern
+}
+
+get_user_input_rename_replacement() {
+    local rename_replacement=""
+
+    # Prompt user for rename replacement e.g. \1_restored
+    read -p "Enter 'rename_replacement' value (leave empty for none): " rename_replacement
+
+    echo $rename_replacement
+}
+
+show_aliases_for_indices() {
+    local indices="$1"
+
+    # Get all aliases
+    response=$(curl \
+        -s \
+        -u "$USERNAME:$PASSWORD" \
+        -X GET \
+        "$TARGET_ES_HOST/_aliases?pretty"
+    )
+
+    # Iterate over each index and get its aliases
+    for index in $(echo $indices | tr "," "\n"); do
+        aliases=$(echo $response | jq --arg index "$index" '.[$index].aliases? | select(. != null and . != {}) | keys[]')
+        if [[ -z "$aliases" ]]; then
+            echo "No aliases found for index: $index"
+            continue
+        fi
+        echo "Aliases for index $index: " && echo $aliases | jq .
+    done
+
+    # for index in $(echo $indices | tr "," "\n"); do
+    #     echo "Aliases for index: $index"
+    #     curl -s -u "$USERNAME:$PASSWORD" -X GET "$TARGET_ES_HOST/$index/_alias?pretty" | jq .
+    # done
+}
+
+# ToDo:
+# - Add checking the cluster has enough capacity to accommodate the restored data
+# - Add checking if number of documents in index from the snapshot is the same in origin and target cluster.
+# - Identify any naming conflicts with the snapshot contents
+# - Prepare for restore:
+#   - Close or delete any conflicting indices
+#   - For data streams, delete the entire stream if it exists
+#   - Ensure the required index templates exist in the target cluster before restoring. If they don't, manually create them first
 main() {
+    echo "Bash version: $BASH_VERSION"
     # # Check if username and password were provided
     # if [ "$#" -ne 2 ]; then
     #     echo "Usage: $0 <username> <password>"
@@ -209,6 +339,8 @@ main() {
     echo "DEFAULT_FEATURES_TO_RESTORE=$DEFAULT_FEATURES_TO_RESTORE"
 
     # Get policy names dynamically
+    echo
+    echo "Fetching SLM policies..."
     POLICIES=($(get_slm_policies))
 
     if [ ${#POLICIES[@]} -eq 0 ]; then
@@ -221,7 +353,7 @@ main() {
     echo "Select a policy to restore a snapshot from:"
     select policy in "${POLICIES[@]}"; do
         if [[ -n "$policy" ]]; then
-            echo "Fetching latest snapshot for policy: $policy..."
+            echo "Fetching the latest snapshot for policy: $policy..."
             latest_snapshot=$(get_latest_snapshot_for_policy "$TARGET_ES_SNAPSHOT_REPOSITORY" "$policy")
 
             if [[ -z "$latest_snapshot" ]]; then
@@ -230,10 +362,11 @@ main() {
             fi
 
             echo
-            echo "Latest snapshot found: $latest_snapshot"
+            echo "The latest snapshot found: $latest_snapshot"
             echo "Snapshot details:"
             echo
 
+            # https://www.elastic.co/docs/api/doc/elasticsearch/v8/operation/operation-snapshot-get
             response=$(curl \
                 -s \
                 -u "$USERNAME:$PASSWORD" \
@@ -246,11 +379,37 @@ main() {
             echo
             echo "Snapshot indices (sorted by name):"
             echo
-            echo $response | jq -r '.snapshots[0].indices[]' | sort
+
+            snapshot_indices=$(echo $response | jq -r '.snapshots[0].indices[]' | sort)
+            echo "$snapshot_indices"
+
+            echo
+            echo "Snapshot data streams (sorted by name):"
+            echo
+            echo $response | jq -r '.snapshots[0].data_streams[]' | sort
+
+            echo
+            echo "Snapshot aliases (for each index):"
+            echo
+            show_aliases_for_indices "$snapshot_indices"
+
+            local indices=""
+            # Prompt user to list indices to be included in the restore operation, ask to press ENTER to use the default list. default list should be only "*"
+            echo
+            INCLUDED_INDICES=$(build_list_of_indices_to_include)
+            echo "Indices to be included: $INCLUDED_INDICES"
+
+            if [[ ! -z "$INCLUDED_INDICES" ]]; then
+              indices="$INCLUDED_INDICES"
+            fi
 
             echo
             EXCLUDED_INDICES=$(build_list_of_indices_to_exclude)
             echo "Indices to be excluded: $EXCLUDED_INDICES"
+
+            if [[ ! -z "$EXCLUDED_INDICES" ]]; then
+              indices="$indices,$EXCLUDED_INDICES"
+            fi
 
             echo
             FEATURES_TO_RESTORE=$(build_list_of_features_to_include)
@@ -260,13 +419,43 @@ main() {
             INCLUDE_GLOBAL_STATE=$(get_user_input_include_global_state)
             echo "Include global state: $INCLUDE_GLOBAL_STATE"
 
+            echo
+            IGNORE_UNAVAILABLE=$(get_user_input_ignore_unavailable)
+            echo "Ignore unavailable: $IGNORE_UNAVAILABLE"
+
+            echo
+            INCLUDE_ALIASES=$(get_user_input_include_aliases)
+            echo "Include aliases: $INCLUDE_ALIASES"
+
             local request_body="
             {
-                \"indices\": \"*,$EXCLUDED_INDICES\",
-                \"ignore_unavailable\": true,
+                \"indices\": \"$indices\",
+                \"ignore_unavailable\": $IGNORE_UNAVAILABLE,
                 \"include_global_state\": $INCLUDE_GLOBAL_STATE,
-                \"feature_states\": [\"$FEATURES_TO_RESTORE\"]
+                \"feature_states\": [\"$FEATURES_TO_RESTORE\"],
+                \"include_aliases\": $INCLUDE_ALIASES"
+
+            echo
+            RENAME_PATTERN=$(get_user_input_rename_pattern)
+            echo "Rename pattern: $RENAME_PATTERN"
+
+            if [[ ! -z "$RENAME_PATTERN" ]]; then
+                request_body="$request_body,
+                \"rename_pattern\": \"$RENAME_PATTERN\""
+            fi
+
+            echo
+            RENAME_REPLACEMENT=$(get_user_input_rename_replacement)
+            echo "Rename replacement: $RENAME_REPLACEMENT"
+
+            if [[ ! -z "$RENAME_REPLACEMENT" ]]; then
+                request_body="$request_body,
+                \"rename_replacement\": \"$RENAME_REPLACEMENT\""
+            fi
+
+            request_body="$request_body
             }"
+
             echo
             echo "Request body: $request_body"
 
@@ -275,6 +464,7 @@ main() {
             if [[ "$confirm" == "y" ]]; then
                 restore_snapshot "$latest_snapshot" "$request_body"
 
+                echo && echo "Please wait..."
                 # Give some time for the restore operation to start so _recovery
                 # can catch that some shards are in "INDEX" stage.
                 sleep 10
