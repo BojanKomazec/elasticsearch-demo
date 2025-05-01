@@ -96,6 +96,10 @@ log_empty_line() {
 # This follows the good practice of all user-facing messages being sent to stderr.
 # This is important for scripts that may be used in pipelines or redirected to files.
 # This way, the output of the script can be easily separated from user prompts.
+#
+# Output:
+#   - "y" or "Y" for yes
+#   - "n" or "N" for no
 prompt_user_for_confirmation() {
     local message="$1"
     local default_answer="$2"
@@ -5127,7 +5131,7 @@ list_agents_kibana_endpoint() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X GET \
-        "$KIBANA_HOST/api/fleet/agents?perPage=100" \
+        "$KIBANA_HOST_ORIGIN/api/fleet/agents?perPage=100" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true')
 
@@ -5145,7 +5149,7 @@ get_agent_ids() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X GET \
-        "$KIBANA_HOST/api/fleet/agents?perPage=100" \
+        "$KIBANA_HOST_ORIGIN/api/fleet/agents?perPage=100" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true')
 
@@ -5188,7 +5192,7 @@ unenroll_agents() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X POST \
-        "$KIBANA_HOST/api/fleet/agents/bulk_unenroll" \
+        "$KIBANA_HOST_ORIGIN/api/fleet/agents/bulk_unenroll" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true' \
         -d \
@@ -5209,7 +5213,7 @@ show_fleet_server_hosts() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X GET \
-        "$KIBANA_HOST/api/fleet/fleet_server_hosts" \
+        "$KIBANA_HOST_ORIGIN/api/fleet/fleet_server_hosts" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true')
 
@@ -5238,7 +5242,7 @@ delete_fleet_server_host() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X DELETE \
-        "$KIBANA_HOST/api/fleet/fleet_server_hosts/$fleet_server_host_id" \
+        "$KIBANA_HOST_ORIGIN/api/fleet/fleet_server_hosts/$fleet_server_host_id" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true'
 }
@@ -5321,7 +5325,7 @@ update_fleet_server_host() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X PUT \
-        "$KIBANA_HOST/api/fleet/fleet_server_hosts/$fleet_server_host_id" \
+        "$KIBANA_HOST_ORIGIN/api/fleet/fleet_server_hosts/$fleet_server_host_id" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true' \
         -d \
@@ -5337,7 +5341,7 @@ show_fleet_outputs() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X GET \
-        "$KIBANA_HOST/api/fleet/outputs" \
+        "$KIBANA_HOST_ORIGIN/api/fleet/outputs" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true')
 
@@ -5452,7 +5456,7 @@ update_fleet_output() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X PUT \
-        "$KIBANA_HOST/api/fleet/outputs/$fleet_output_id" \
+        "$KIBANA_HOST_ORIGIN/api/fleet/outputs/$fleet_output_id" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true' \
         -d \
@@ -5554,7 +5558,7 @@ show_kibana_settings() {
         -s \
         -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
         -X GET \
-        "$KIBANA_HOST/api/kibana/settings" \
+        "$KIBANA_HOST_ORIGIN/api/kibana/settings" \
         -H 'Content-Type: application/json' \
         -H 'kbn-xsrf: true')
     log_string "$(echo "$response" | jq .)"
@@ -6068,7 +6072,7 @@ show_all_spaces() {
         -X GET \
         -H "kbn-xsrf: true" \
         -u "$KIBANA_USERNAME":"$KIBANA_PASSWORD" \
-        "$KIBANA_HOST$path"
+        "$KIBANA_HOST_ORIGIN$path"
     )
 
     http_code=$(echo "$response" | tail -n1)
@@ -6117,7 +6121,7 @@ show_current_space() {
         -X GET \
         -H "kbn-xsrf: true" \
         -u "$KIBANA_USERNAME":"$KIBANA_PASSWORD" \
-        "$KIBANA_HOST$path"
+        "$KIBANA_HOST_ORIGIN$path"
     )
 
     http_code=$(echo "$response" | tail -n1)
@@ -6172,7 +6176,7 @@ get_allowed_types_response_payload() {
         -X GET \
         -H "kbn-xsrf: true" \
         -u "$ES_USERNAME":"$ES_PASSWORD" \
-        "$KIBANA_HOST/api/kibana/management/saved_objects/_allowed_types"
+        "$KIBANA_HOST_ORIGIN/api/kibana/management/saved_objects/_allowed_types"
     )
 
     http_code=$(echo "$response" | tail -n1)
@@ -6364,7 +6368,7 @@ Sunch hidden types might have been created by plugins etc., they have 'hiddenTyp
             -H "kbn-xsrf: true" \
             -u "$ES_USERNAME":"$ES_PASSWORD" \
             -H "Content-Type: application/json" \
-            "$KIBANA_HOST$path"
+            "$KIBANA_HOST_ORIGIN$path"
         )
     fi
 
@@ -6556,7 +6560,7 @@ get_tag_object_details_response_payload() {
         -X GET \
         -H "kbn-xsrf: true" \
         -u "$ES_USERNAME":"$ES_PASSWORD" \
-        "$KIBANA_HOST/api/saved_objects/_find?type=tag&search=$tag_name&search_fields=name&per_page=10000"
+        "$KIBANA_HOST_ORIGIN/api/saved_objects/_find?type=tag&search=$tag_name&search_fields=name&per_page=10000"
     )
 
     http_code=$(echo "$response" | tail -n1)
@@ -6611,11 +6615,55 @@ get_tag_id() {
 # https://www.elastic.co/docs/api/doc/kibana/v9/operation/operation-findsavedobjects
 # See: https://github.com/elastic/kibana/issues/149988
 #
-#
-# For some reason the type=dashboard response does not contain dashboards (tagged with <KIBANA_OBJECT_TAG>)
-# for which at least one of their panels shows the following error:
-# - Could not find the data view: <ID>
-# Todo: Find out why this is the case
+# In case of success, Saved Objects API returns a JSON object with the following structure:
+# {
+#   "page": 1,
+#   "per_page": 20,
+#   "total": 28,
+#   "saved_objects": [
+#     {
+#       "type": "dashboard",
+#       "id": "8bc...a3b",
+#       "namespaces": [
+#         "default"
+#       ],
+#       "attributes": {
+#         "description": "",
+#         "hits": 0,
+#         "kibanaSavedObjectMeta": {
+#           "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"filter\":[]}"
+#         },
+#         "optionsJSON": "{\"hidePanelTitles\":false,\"useMargins\":true}",
+#         "panelsJSON": "[...
+#         "refreshInterval": {
+#           "pause": true,
+#           "value": 0
+#         },
+#         "timeFrom": "now-15d",
+#         "timeRestore": true,
+#         "timeTo": "now",
+#         "title": "Data Dashboard",
+#         "version": 1
+#       },
+#       "references": [
+#         {
+#           "id": "03c348a0-150d-11eb-87ef-5d40e8250222",
+#           "name": "106...76cd17:panel_106d...76cd17",
+#           "type": "visualization"
+#         },
+#        ...
+#       ],
+#       "migrationVersion": {
+#         "dashboard": "7.10.0"
+#       },
+#       "coreMigrationVersion": "7.10.0",
+#       "updated_at": "2023-10-01T12:00:00.000Z",
+#       "version": "WzEwMTAsMV0="
+#     },
+#     ...
+#   ],
+#   "error": null
+# }
 get_saved_objects_with_tag_response_payload() {
     log_trace "get_saved_objects_with_tag_response_payload()"
 
@@ -6625,6 +6673,17 @@ get_saved_objects_with_tag_response_payload() {
     local type="$1"
     local has_reference_value="$2"
 
+    local path
+
+    # Saved Objects API endpoint for fetching saved objects
+    # By default it returns 1st page with 20 objects. This is why we set perPage=10000:
+    path="/api/saved_objects/_find?type=$type&has_reference=$has_reference_value&per_page=10000&page=1"
+
+    # Path used by Kibana UI to fetch saved objects
+    # path="/api/kibana/management/saved_objects/_find?type=$type&hasReference=$has_reference_value&perPage=10000&page=1"
+
+    log_wait "Using $path API to fetch saved objects of type $type with reference value $has_reference_value..."
+
     response=$(
         curl \
         -s \
@@ -6633,7 +6692,7 @@ get_saved_objects_with_tag_response_payload() {
         -H "kbn-xsrf: true" \
         -u "$ES_USERNAME":"$ES_PASSWORD" \
         -H "Content-Type: application/json" \
-        "$KIBANA_HOST/api/saved_objects/_find?type=$type&has_reference=$has_reference_value"
+        "$KIBANA_HOST_ORIGIN$path"
     )
 
     http_code=$(echo "$response" | tail -n1)
@@ -6641,10 +6700,421 @@ get_saved_objects_with_tag_response_payload() {
     if [[ "$http_code" -ne 200 ]]; then
         log_error "Error: Unable to fetch saved objects. HTTP status code: $http_code"
         log_error "Response: $response"
-        exit 1
+        return 1
     fi
 
     payload=$(echo "$response" | awk 'NR==1{print; exit}')
+
+    if [[ -z "$payload" ]]; then
+        log_error "Error: Empty payload in response from the server."
+        return 1
+    fi
+
+    if ! echo "$payload" | jq empty; then
+        log_error "Error: Invalid JSON response."
+        log_error "Response: $payload"
+        return 1
+    fi
+
+    printf "%s" "$payload"
+}
+
+# same as get_saved_objects_with_tag_response_payload but uses the Kibana index directly
+# It is not possible to query kibana index directly in order to get saved objects by tag.
+# This is because the objects stored in Kibana index don't have tag(s) attribute(s).
+# Tags are stored in a separate index and are not directly associated with the saved objects.
+#
+# Example response of querying Kibana index directly via Elastic API:
+# {
+#   "took": 441,    
+#   "timed_out": false,
+#   "_shards": {
+#     "total": 7,
+#     "successful": 7,
+#     "skipped": 0,
+#     "failed": 0
+#   },
+#   "hits": {
+#     "total": {
+#       "value": 3,
+#       "relation": "eq"
+#     },
+#     "max_score": 9.513762,
+#     "hits": [
+#       {
+#         "_index": ".kibana_8.7.1_001",
+#         "_id": "action:92e59890-ee53-11ed-be07-15a53c38f2ac",
+#         "_score": 9.513762,
+#         "_source": {
+#           "action": {
+#             "actionTypeId": ".server-log",
+#             "name": "Monitoring: Write to Kibana log",
+#             "isMissingSecrets": false,
+#             "config": {},
+#             "secrets": "Bw8bD8uuIrc...EXg=="
+#           },
+#           "type": "action",
+#           "references": [],
+#           "namespaces": [
+#             "default"
+#           ],
+#           "migrationVersion": {
+#             "action": "8.3.0"
+#           },
+#           "coreMigrationVersion": "8.7.1",
+#           "updated_at": "2023-05-09T10:23:43.261Z",
+#           "created_at": "2023-05-09T10:23:43.261Z"
+#         }
+#       },
+#
+# or
+#
+# {
+#   "took": 1186,
+#   "timed_out": false,
+#   "_shards": {
+#     "total": 7,
+#     "successful": 7,
+#     "skipped": 0,
+#     "failed": 0
+#   },
+#   "hits": {
+#     "total": {
+#       "value": 21,
+#       "relation": "eq"
+#     },
+#     "max_score": 6.3754406,
+#     "hits": [
+#       {
+#         "_index": ".kibana_8.7.1_001",
+#         "_id": "index-pattern:security-solution-default",
+#         "_score": 6.3754406,
+#         "_source": {
+#           "index-pattern": {
+#             "fieldAttrs": "{}",
+#             "title": ".alerts-security.alerts-default,apm-*-transaction*,auditbeat-*,endgame-*,filebeat-*,logs-*,packetbeat-*,traces-apm*,winlogbeat-*,-*elastic-cloud-logs-*",
+#             "timeFieldName": "@timestamp",
+#             "sourceFilters": "[]",
+#             "fields": "[]",
+#             "fieldFormatMap": "{}",
+#             "typeMeta": "{}",
+#             "allowNoIndex": true,
+#             "runtimeFieldMap": "{}",
+#             "name": ".alerts-security.alerts-default,apm-*-transaction*,auditbeat-*,endgame-*,filebeat-*,logs-*,packetbeat-*,traces-apm*,winlogbeat-*,-*elastic-cloud-logs-*"
+#           },
+#           "type": "index-pattern",
+#           "references": [],
+#           "namespaces": [
+#             "default"
+#           ],
+#           "migrationVersion": {
+#             "index-pattern": "8.0.0"
+#           },
+#           "coreMigrationVersion": "8.7.1",
+#           "updated_at": "2023-05-05T08:34:05.091Z",
+#           "created_at": "2023-05-05T08:34:05.091Z"
+#         }
+#       },
+#
+# get_saved_objects_with_tag_from_kibana_index_response_payload() {
+#     log_trace "get_saved_objects_with_tag_from_kibana_index_response_payload()"
+
+#     local response
+#     local http_code
+#     local payload
+#     local type="$1"
+#     local tag_name="$2"
+
+#     local path
+#     path="/.kibana*/_search"
+
+#     log_wait "Using $path API to fetch saved objects of type $type with tag $tag_name..."
+
+#     local data
+#     data='
+#     {
+#         "query": {
+#             "bool": {
+#                 "must": [
+#                     {
+#                         "term": {
+#                             "type": "'"$type"'"
+#                         }
+#                     },
+#                     {
+#                         "match": {
+#                             "'"$type"'.tags": "'"$tag_name"'"
+#                         }
+#                     }
+#                 ]
+#             }
+#         },
+#         "_source": true,
+#         "size": 10000
+#     }'
+
+#     response=$(
+#         curl \
+#         -s \
+#         -w "\n%{http_code}" \
+#         -X GET \
+#         -H "kbn-xsrf: true" \
+#         -u "$ES_USERNAME":"$ES_PASSWORD" \
+#         -H "Content-Type: application/json" \
+#         "$ES_HOST$path" \
+#         -d "$data"
+#     )
+
+#     http_code=$(echo "$response" | tail -n1)
+
+#     if [[ "$http_code" -ne 200 ]]; then
+#         log_error "Error: Unable to fetch saved objects. HTTP status code: $http_code"
+#         log_error "Response: $response"
+#         exit 1
+#     fi
+
+#     payload=$(echo "$response" | awk 'NR==1{print; exit}')
+
+#     if [[ -z "$payload" ]]; then
+#         log_error "Error: Empty payload in response from the server."
+#         exit 1
+#     fi
+
+#     if ! echo "$payload" | jq empty; then
+#         log_error "Error: Invalid JSON response."
+#         log_error "Response: $payload"
+#         exit 1
+#     fi
+
+#     printf "%s" "$payload"
+# }
+
+# Function to fetch saved objects of a specific type that have the specified tag
+# Arguments:
+#   $1: Type of the saved object (e.g. index-pattern, dashboard, etc.)
+#   $2: has_reference_value (URI-encoded value which contains Tag ID)
+# Returns:
+#   JSON payload containing the saved objects of the specified type and tag
+#   If no saved objects are found, returns an empty string
+#   If an error occurs, logs the error and exits with a non-zero status
+#   The function uses the /api/saved_objects/_find API endpoint to fetch the saved objects
+# get_objects_list() {
+#     log_trace "get_objects_list()"
+
+#     local type="$1"
+#     local has_reference_value="$2"
+
+#     if [[ -z "$type" ]]; then
+#         log_error "Type is required!"
+#         return 1
+#     fi
+
+#     if [[ -z "$has_reference_value" ]]; then
+#         log_error "has_reference_value is required!"
+#         return 1
+#     fi
+
+#     local payload
+#     if ! payload=$(get_saved_objects_with_tag_response_payload "$type" "$has_reference_value"); then
+#         log_error "Failed to fetch saved objects of type $type and tag id $tag_id."
+#         return 1
+#     fi
+
+#     printf "%s" "$payload"
+# }
+
+resolve_saved_object() {
+    log_trace "resolve_saved_object()"
+
+    local object_type="$1"
+    local object_id="$2"
+
+    if [[ -z "$object_type" ]]; then
+        log_error "Object type is required!"
+        return 1
+    fi
+
+    if [[ -z "$object_id" ]]; then
+        log_error "Object ID is required!"
+        return 1
+    fi
+    log_info "Resolving saved object of type $object_type with ID $object_id..."
+
+    local response
+    local http_code
+    local payload
+
+    response=$(
+        curl \
+        -s \
+        -w "\n%{http_code}" \
+        -X GET \
+        -H "kbn-xsrf: true" \
+        -u "$ES_USERNAME":"$ES_PASSWORD" \
+        "$KIBANA_HOST_ORIGIN/api/saved_objects/$object_type/$object_id"
+    )
+
+    http_code=$(echo "$response" | tail -n1)
+    if [[ "$http_code" -ne 200 ]]; then
+        log_error "Error: Unable to resolve saved object. HTTP status code: $http_code"
+        log_error "Response: $response"
+        return 1
+    fi
+    payload=$(echo "$response" | awk 'NR==1{print; exit}')
+    if [[ -z "$payload" ]]; then
+        log_error "Error: Empty payload in response from the server."
+        return 1
+    fi
+    if ! echo "$payload" | jq empty; then
+        log_error "Error: Invalid JSON response."
+        log_error "Response: $payload"
+        return 1
+    fi
+    # log_success "Resolved saved object:\n$(echo "$payload" | jq .)"
+
+    printf "%s" "$payload"
+}
+
+verify_references() {
+    log_trace "verify_references()"
+
+    local objects_list="$1"
+
+    if [[ -z "$objects_list" ]]; then
+        log_error "Objects list is required!"
+        return 1
+    fi
+
+    # Extract all references from the objects list into an array of unique reference objects.
+    # Verify if the reference objects exist in the saved objects list.
+    # If don't exist, find the parent objects in the objects list and print them with warning message.
+
+    local references
+    references=$(echo "$objects_list" | jq -r '.[] | .references[] | {type: .type, id: .id, name: .name}' | jq -s 'unique_by(.id) | sort_by(.name)')
+    log_info "References:\n$references"
+
+    # Use jq to loop through each element
+    echo "$references" | jq -c '.[]' | while read -r item; do
+        id=$(echo "$item" | jq -r '.id')
+        name=$(echo "$item" | jq -r '.name')
+        type=$(echo "$item" | jq -r '.type')
+
+        log_info "Processing item:\n\tID: $id\n\tName: $name\n\tType: $type"
+
+        # Check if the reference exists in the objects list
+
+        local payload
+
+        if ! payload=$(resolve_saved_object "$type" "$id"); then
+            log_error "Failed to resolve saved object of type $type and ID $id."
+
+            # If the reference object does not exist, find the parent object in the objects list
+            local parent_objects
+            parent_objects=$(echo "$objects_list" | jq -r --arg id "$id" '.[] | select(.references[]? | .id == $id) | {type: .type, id: .id}' | jq -s 'unique_by(.id)')
+           
+            if [[ -n "$parent_objects" ]]; then
+                log_warning "Parent objects of the missing reference found:\n$parent_objects"
+                log_warning "Importing these objects into another Kibana instance might fail due to missing reference."
+                log_warning "Consider removing the reference from the parent objects before importing or don't import these parent objects at all."
+            else
+                log_error "No parent objects found for reference ID $id."
+            fi
+           
+            continue
+        fi
+
+        log_success "Resolved saved object (payload, truncated):\n$(echo "$payload" | jq . | head -n 5)"
+
+        # Check if the reference object itself has references and if so, resolve them too
+        # Check if payload contains .references attribute
+        if echo "$payload" | jq -e 'has("references")' > /dev/null; then
+            # If .references attribute is present, read references and verify them
+            # Bash doesn't support block-level scope within if statements. Local variables in Bash can only be scoped at the function level.
+            local references_objects_list
+            references_objects_list=$(echo "$payload" | jq '. | [{type: .type, id: .id, references: .references}]')
+            log_info "References list:\n$references_objects_list"
+            verify_references "$references_objects_list"
+        else
+            log_warning "No references found in the resolved saved object."
+        fi
+    done
+
+    log_empty_line
+}
+
+probe_export_saved_objects() {
+    log_trace "probe_export_saved_objects()"
+
+    local type="$1"
+    local tag_name="$2"
+    local objects_list="$3"
+    local includeReferencesDeep="$4"
+
+    local response
+    local http_code
+    local payload
+
+    local timestamp
+    local response_file_name
+    local export_file_name
+
+    if [[ -z "$type" ]]; then
+        log_error "Type is required."
+        exit 1
+    fi
+
+    if [[ -z "$objects_list" ]]; then
+        log_error "Empty objects_list JSON: $objects_list"
+        exit 1
+    fi
+
+    if ! echo "$objects_list" | jq empty 2>/dev/null; then
+        log_error "Invalid JSON in objects_list: $objects_list"
+        exit 1
+    fi
+
+    if [[ -z "$includeReferencesDeep" ]]; then
+        includeReferencesDeep=false
+    fi
+
+    # excludeExportDetails:
+    # - default is false
+    # example: {"exportedCount": 1, "missingRefCount": 0, "missingReferences": []}
+    local http_post_data="{
+        \"objects\":$objects_list,
+        \"excludeExportDetails\": false,
+        \"includeReferencesDeep\": $includeReferencesDeep
+    }"
+
+    log_trace "HTTP POST data:\n$http_post_data"
+
+    local url="$KIBANA_HOST_ORIGIN/api/saved_objects/_export"
+    log_wait "Sending request to $url to export saved objects of type $type and tag $tag_name..."
+
+    response=$(curl \
+        -s \
+        -w "\n%{http_code}" \
+        -X POST \
+        -u "$ES_USERNAME":"$ES_PASSWORD" \
+        -H "kbn-xsrf: string" \
+        -H "Content-Type: application/json; Elastic-Api-Version=2023-10-31" \
+        -d "$http_post_data" \
+        "$KIBANA_HOST_ORIGIN/api/saved_objects/_export")
+
+    # Enable only for testing purposes
+    # echo "$response" | jq . > "$response_file_name"
+
+    http_code=$(echo "$response" | tail -n1)
+
+    if [[ "$http_code" -ne 200 ]]; then
+        log_error "Error: Unable to probe export saved objects of type $type. HTTP status code: $http_code"
+        log_error "Response: $response"
+        exit 1
+    fi
+
+    # Remove the last line (HTTP status code) from the response
+    payload=$(echo "$response" | sed '$d')
+    # payload=$(echo "$response" | head -n -1 | jq -c '.')
 
     if [[ -z "$payload" ]]; then
         log_error "Error: Empty payload in response from the server."
@@ -6657,41 +7127,146 @@ get_saved_objects_with_tag_response_payload() {
         exit 1
     fi
 
-    printf "%s" "$payload"
+    # Extract the last line from the payload
+    local export_details
+    export_details=$(echo "$payload" | tail -n1)
+    # log_info "Export details:\n$export_details"
+
+    # Return export details
+    printf "%s" "$export_details"
 }
 
-# Function to fetch saved objects of a specific type that have the specified tag
-# Arguments:
-#   $1: Type of the saved object (e.g. index-pattern, dashboard, etc.)
-#   $2: has_reference_value (URI-encoded value which contains Tag ID)
-# Returns:
-#   JSON payload containing the saved objects of the specified type and tag
-#   If no saved objects are found, returns an empty string
-#   If an error occurs, logs the error and exits with a non-zero status
-#   The function uses the /api/saved_objects/_find API endpoint to fetch the saved objects
-get_objects_list() {
-    log_trace "get_objects_list()"
+# _export API requires the objects list to be in the following format:
+# [
+#   {
+#     "type": "dashboard",
+#     "id": "8bc01300-...-c5fb3014aa3b"
+#   },
+#   {
+#     "type": "index-pattern",
+#     "id": "36ea7ea0-e7e4-11ec-92b0-b5f4ac305a0c"
+#   }
+# ]
+# The references attribute is not needed for the export.
+# The export API will automatically resolve the references when importing the objects.
+export_saved_objects() {
+    log_trace "export_saved_objects()"
 
     local type="$1"
-    local has_reference_value="$2"
+    local tag_name="$2"
+    local objects_list="$3"
+    local includeReferencesDeep="$4"
+    local excludeExportDetails="$5"
+
+    local response
+    local http_code
+    local payload
+
+    local timestamp
+    local response_file_name
+    local export_file_name
 
     if [[ -z "$type" ]]; then
-        log_error "Type is required!"
-        return 1
+        log_error "Type is required."
+        exit 1
     fi
 
-    if [[ -z "$has_reference_value" ]]; then
-        log_error "has_reference_value is required!"
-        return 1
+    if [[ -z "$objects_list" ]]; then
+        log_error "Empty objects_list JSON: $objects_list"
+        exit 1
     fi
 
-    local payload
-    if ! payload=$(get_saved_objects_with_tag_response_payload "$type" "$has_reference_value"); then
-        log_error "Failed to fetch saved objects of type $type and tag id $tag_id."
-        return 1
+    if ! echo "$objects_list" | jq empty 2>/dev/null; then
+        log_error "Invalid JSON in objects_list: $objects_list"
+        exit 1
     fi
 
-    printf "%s" "$payload"
+    if [[ -z "$excludeExportDetails" ]]; then
+        excludeExportDetails=false
+    fi
+
+    if [[ -z "$includeReferencesDeep" ]]; then
+        includeReferencesDeep=false
+    fi
+
+    timestamp=$(date '+%Y-%m-%d-%H-%M-%S')
+    response_file_name="${ENV}_${type}_${tag_name}_${timestamp}.export_response.json"
+    export_file_name="${ENV}_${type}_${tag_name}_${timestamp}.ndjson"
+
+
+    # excludeExportDetails:
+    # - default is false
+    # example: {"exportedCount": 1, "missingRefCount": 0, "missingReferences": []}
+    local http_post_data="{
+        \"objects\":$objects_list,
+        \"excludeExportDetails\": $excludeExportDetails,
+        \"includeReferencesDeep\": $includeReferencesDeep
+    }"
+
+    log_trace "HTTP POST data:\n$http_post_data"
+
+    local url="$KIBANA_HOST_ORIGIN/api/saved_objects/_export"
+    log_wait "Sending request to $url to export saved objects of type $type and tag $tag_name..."
+
+    response=$(curl \
+        -s \
+        -w "\n%{http_code}" \
+        -X POST \
+        -u "$ES_USERNAME":"$ES_PASSWORD" \
+        -H "kbn-xsrf: string" \
+        -H "Content-Type: application/json; Elastic-Api-Version=2023-10-31" \
+        -d "$http_post_data" \
+        "$KIBANA_HOST_ORIGIN/api/saved_objects/_export")
+
+    # Enable only for testing purposes
+    echo "$response" | jq . > "$response_file_name"
+
+    http_code=$(echo "$response" | tail -n1)
+
+    if [[ "$http_code" -ne 200 ]]; then
+        log_error "Error: Unable to export saved objects of type $type. HTTP status code: $http_code"
+        log_error "Response: $response"
+        exit 1
+    fi
+
+    # Remove the last line (HTTP status code) from the response
+    payload=$(echo "$response" | sed '$d')
+    # payload=$(echo "$response" | head -n -1 | jq -c '.')
+
+    if [[ -z "$payload" ]]; then
+        log_error "Error: Empty payload in response from the server."
+        exit 1
+    fi
+
+    if ! echo "$payload" | jq empty; then
+        log_error "Error: Invalid JSON response."
+        log_error "Response: $payload"
+        exit 1
+    fi
+
+    if [[ $excludeExportDetails == false ]]; then
+        # Extract the last line from the payload
+        local export_details
+        export_details=$(echo "$payload" | tail -n1)
+        log_info "Export details:\n$export_details"
+
+        # Remove the last line from the payload
+        payload=$(echo "$payload" | sed '$d')
+
+        # export_details is a JSON object with the following structure (example):
+        # {"excludedObjects":[],"excludedObjectsCount":0,"exportedCount":58,"missingRefCount":1,"missingReferences":[{"id":"aaea9d30-fc48-11ec-92b0-b5f4ac305a0c","type":"index-pattern"}]}
+    fi
+
+    # log_trace "Payload:\n$(echo "$payload" | jq .)"
+
+    # Save the exported objects to a file.
+    # The file will be in the NDJSON format, which is a newline-delimited JSON format.
+    # Each line in the file must be a valid JSON object so don't use jq to pretty print the JSON.
+    # This format is used by Kibana for importing and exporting saved objects.
+    echo "$payload" > "$export_file_name"
+
+    # Return the name of the export file
+    printf "%s" "$export_file_name"
 }
 
 show_objects_with_tag() {
@@ -6700,6 +7275,7 @@ show_objects_with_tag() {
     local object_type
     local tag_name
     local save_details_to_file
+    local create_export_ndjson_file
 
     object_type=$(prompt_user_for_value "Object type (e.g. index-pattern, dashboard, etc.)")
     log_info "Object type: $object_type"
@@ -6709,6 +7285,9 @@ show_objects_with_tag() {
 
     save_details_to_file=$(prompt_user_for_confirmation "❓ Save details to file?" "n")
     log_info "Save details to file: $save_details_to_file"
+
+    create_export_ndjson_file=$(prompt_user_for_confirmation "❓ Create export ndjson file?" "n")
+    log_info "Create export ndjson file: $create_export_ndjson_file"
 
     local tag_id
 
@@ -6727,7 +7306,7 @@ show_objects_with_tag() {
     log_wait "Fetching saved objects of type $object_type and tag $tag_name..."
 
     local payload=""
-    if ! payload=$(get_objects_list "$object_type" "$has_reference_value"); then
+    if ! payload=$(get_saved_objects_with_tag_response_payload "$object_type" "$has_reference_value"); then
         log_error "Failed to fetch saved objects of type $object_type and tag id $tag_id."
         return 1
     fi
@@ -6751,55 +7330,476 @@ show_objects_with_tag() {
     log_info "Number of saved objects returned: $objects_count"
 
     local object_names
+    # object_names=$(echo "$payload" | jq -r '.saved_objects[] | {id: .id, title: .attributes.title}')
     object_names=$(echo "$payload" | jq -r '.saved_objects[] | .attributes.title')
+
     log_info "List of saved object names:\n$object_names"
     log_empty_line
 
-    # local objects_list=""
+    local objects_list=""
 
-    # if [ "$objects_count" -gt 0 ]; then
-    #     # objects_list=$(echo "$payload" | jq '[.saved_objects[] | {type, id, references}]')
-    #     objects_list=$(echo "$payload" | jq '[.saved_objects[]] | ')
-    #     #   [
-    #     #   {
-    #     #     "type": "dashboard",
-    #     #     "id": "8bc01300-...-c5fb3014aa3b"
-    #     #   },
-    #     #   {
-    #     #     "type": "dashboard",
-    #     #     "id": "eda...ec0fd"
-    #     #   }]
-    #     # objects_list=$(echo "$payload" | jq '[.saved_objects[]]')
-    # fi
+    if [ "$objects_count" -gt 0 ]; then
+        # Create compact list of objects like this:
+        # [
+        #     {
+        #         "type": "dashboard",
+        #         "id": "8bc01300-...-c5fb3014aa3b",
+        #         "references": [
+        #             {
+        #                "name": "kibanaSavedObjectMeta.searchSourceJSON.filter[0].meta.index",
+        #                "type": "index-pattern",
+        #                "id": "36ea7ea0-e7e4-11ec-92b0-b5f4ac305a0c"
+        #             },
+        #             ...
+        #         ]
+        #     },
+        #     ...
+        # ]
+        objects_list=$(echo "$payload" | \
+            jq '[.saved_objects[] | {title: .attributes.title, type: .type, id: .id, references: .references}]')
+        log_info "objects_list: \n$(echo "$objects_list" | jq .)"
 
-    # log_success "objects_list (truncated...): \n$(echo "$objects_list" | jq . | head -n 50)"
+        if [[ "$create_export_ndjson_file" == "true" ]]; then
+            local objects_list_for_export
+            local includeReferencesDeep=true
+            local export_details
+
+            objects_list_for_export=$(echo "$payload" | jq '[.saved_objects[] | {type: .type, id: .id}]')
+
+            if ! export_details=$(probe_export_saved_objects "$object_type" "$tag_name" "$objects_list_for_export" \
+                "$includeReferencesDeep"); then
+                log_error "Failed to probe export saved objects of type $object_type and tag name $tag_name."
+                return 1
+            fi
+
+            log_info "Export details:\n$export_details"
+
+            # Verify if export_details contains "missingRefCount" and "missingReferences"
+            # If "missingRefCount" is greater than 0, it means that there are missing references in the export.
+
+            local missing_ref_count
+            missing_ref_count=$(echo "$export_details" | jq '.missingRefCount')
+
+            if [[ "$missing_ref_count" -gt 0 ]]; then
+                log_warning "Export contains objects with missing references. Proceeding with import might fail so such objects will be omitted from the export."
+                log_warning "Missing references count: $missing_ref_count"
+
+                local missing_references
+                missing_references=$(echo "$export_details" | jq '.missingReferences')
+                log_warning "Missing references:\n$missing_references"
+
+                # It is not possible to remove missing references from objects in objects_list.
+                # This is because only object ids and type are sent to export API which then verifies references.
+                # All we can do is to remove objects from objects_list which have missing references in the list of
+                # references.
+
+                # First, let's list objects that will be removed
+                local objects_to_remove
+                objects_to_remove=$(echo "$objects_list" | jq -r --argjson missing_references "$missing_references" \
+                    '[.[] | select(any(.references[]; .id == $missing_references[].id))]')
+                log_warning "Objects to be removed:\n$objects_to_remove"
+
+                # Now, let's remove them from objects_list
+                log_info "Removing objects with missing references from objects_list..."
+                # iterate through missing_references and from objects_list remove any object which has missing reference
+                # in the list of references
+                # and save the remaining objects to a new list
+                objects_list=$(echo "$objects_list" | jq -r --argjson missing_references "$missing_references" \
+                    '[.[] | select(all(.references[]; .id != $missing_references[].id))]')
+                log_info "objects_list (after removing objects with missing references):\n$objects_list"
+
+                objects_list_for_export=$(echo "$objects_list" | jq '[.[] | {type: .type, id: .id}]')
+            fi
+
+            log_info "objects_list_for_export:\n$objects_list_for_export"
+
+            # print the count of elements in objects_list_for_export
+            local filtered_objects_count
+            filtered_objects_count=$(echo "$objects_list_for_export" | jq '. | length')
+            log_info "Number of objects in objects_list_for_export: $filtered_objects_count"
+
+            local export_file_name
+
+            local excludeExportDetails=false
+            if ! export_file_name=$(export_saved_objects "$object_type" "$tag_name" "$objects_list_for_export" \
+                "$includeReferencesDeep" "$excludeExportDetails"); then
+                log_error "Failed to export saved objects of type $object_type and tag name $tag_name."
+                return 1
+            fi
+            
+            log_success "Exported objects to file: $export_file_name"
+        fi
+
+        # verify_references "$objects_list"
+    fi
 
     # if [[ $save_details_to_file == "true" ]]; then
     #     local objects_list_file_name="saved_objects_${object_type}_tag_${tag_name}.json"
     #     echo "$objects_list" | jq . > "$objects_list_file_name"
     #     log_success "Saved objects list to file: $objects_list_file_name"
     # fi
- 
+
+    # if ! payload=$(get_saved_objects_with_tag_from_kibana_index_response_payload "$object_type" "$tag_name"); then
+    #     log_error "Failed to fetch saved objects of type $object_type and tag name $tag_name."
+    #     return 1
+    # fi
+
+    # if [[ -z "$payload" ]]; then
+    #     log_warning "No saved objects of type $object_type and tag name $tag_name found"
+    #     log_empty_line
+    #     return 0
+    # fi
+
+    # log_info "Payload (truncated):\n$(echo "$payload" | jq . | head -n 50)"
+    # log_info "Number of saved objects returned: $(echo "$payload" | jq '.hits.total.value')"
     log_empty_line
 }
 
-show_index_pattern() {
-    log_trace "show_index_pattern()"
+# overwrite=false parameter ensures that objects with the same IDs will not be replaced
+#
+# Output in case of some objects' import errors out is in format:
+# {
+#   "successCount": 55,
+#   "success": false,
+#   "warnings": [],
+#   "successResults": [
+#     {
+#       "type": "index-pattern",
+#       "id": "filebeat-*",
+#       "meta": {
+#         "title": "filebeat-*",
+#         "icon": "indexPatternApp"
+#       },
+#       "managed": false
+#     },
+#     {
+#       "type": "visualization",
+#       "id": "03c348a0-150d-11eb-87ef-5d40e8250222",
+#       "meta": {
+#         "title": "Engagement",
+#         "icon": "visualizeApp"
+#       },
+#       "managed": false
+#     },
+#     ...
+#   ],
+#   "errors": [
+#     {
+#       "id": "eda73750-ce39-11ed-8308-f1a02efec0fd",
+#       "type": "dashboard",
+#       "meta": {
+#         "title": "twitter-engagement-report",
+#         "icon": "dashboardApp"
+#       },
+#       "error": {
+#         "type": "missing_references",
+#         "references": [
+#           {
+#             "type": "index-pattern",
+#             "id": "aaea9d30-fc48-11ec-92b0-b5f4ac305a0c"
+#           }
+#         ]
+#       }
+#     },
+#     ...
+#   ]
+# }
+import_saved_objects() {
+    log_trace "import_saved_objects()"
 
-    local index_pattern_id
-    index_pattern_id=$(prompt_user_for_value "Index pattern ID")
-    log_info "Index pattern ID: $index_pattern_id"
+    local filename="$1"
+    local overwrite="$2"
+    local request_url
 
-    log_wait "Fetching index pattern: $index_pattern_id..."
+    if [[ -z "$filename" ]]; then
+        log_error "Filename is required."
+        exit 1
+    fi
 
-    response=$(curl \
+    if [[ ! -f "$filename" ]]; then
+        log_error "File $filename does not exist."
+        exit 1
+    fi
+
+    if [[ ! -r "$filename" ]]; then
+        log_error "File $filename is not readable."
+        exit 1
+    fi
+
+    if [[ ! -s "$filename" ]]; then
+        log_error "File $filename is empty."
+        exit 1
+    fi
+
+    if [[ -z "$overwrite" ]]; then
+        overwrite=false
+    fi
+
+    request_url="$KIBANA_HOST_TARGET/api/saved_objects/_import?overwrite=$overwrite"
+    log_info "Request URL: $request_url"
+
+    local proceed
+    proceed=$(prompt_user_for_confirmation "❓ Proceed with import?" "n")
+    if [[ "$proceed" != "true" ]]; then
+        log_warning "Import cancelled by user."
+        return 1
+    fi
+
+    log_wait "Sending request to $request_url to import saved objects from file $filename..."
+
+    response=$(
+        curl \
         -s \
-        -q \
-        -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" \
+        -w "\n%{http_code}" \
+        -X POST \
+        -u "$ES_USERNAME":"$ES_PASSWORD" -s \
+        -H "kbn-xsrf: true" \
+        -H "Content-Type: multipart/form-data" \
+        -F "file=@${filename}" \
+        "$request_url")
+
+    http_code=$(echo "$response" | tail -n1)
+
+    if [[ "$http_code" -ne 200 ]]; then
+        log_error "Error: Unable to import saved objects of type $type. HTTP status code: $http_code"
+        log_error "Response: $response"
+        return 1
+    fi
+
+    payload=$(echo "$response" | awk 'NR==1{print; exit}')
+
+    if [[ -z "$payload" ]]; then
+        log_error "Error: Empty payload in response from the server."
+        return 1
+    fi
+
+    if ! echo "$payload" | jq empty; then
+        log_error "Error: Invalid JSON response."
+        log_error "Response: $payload"
+        return 1
+    fi
+
+    printf "%s" "$payload"
+}
+
+import_saved_objects_handler() {
+    log_trace "import_saved_objects_handler()"
+    local filename
+    local overwrite
+
+    filename=$(prompt_user_for_value "File name (e.g. export.ndjson)")
+    log_info "File name: $filename"
+
+    overwrite=$(prompt_user_for_confirmation "❓ Overwrite existing objects?" "n")
+    if [[ "$overwrite" != "true" ]]; then
+        overwrite=false
+    fi
+    log_info "Overwrite existing objects: $overwrite"
+
+    local payload
+    if ! payload=$(import_saved_objects "$filename" "$overwrite"); then
+        log_error "Failed to import saved objects from file $filename."
+        return 1
+    fi
+
+    log_trace "import_saved_objects response payload:\n$(echo "$payload" | jq .)"
+    log_empty_line
+
+    if [ "$(echo "$payload" | jq -r '.success')" == true ]; then
+        log_success "Successfully imported saved objects form file $filename"
+    else
+        log_error "Failed to import saved objects from file $filename"
+    fi
+}
+
+show_saved_object() {
+    local object_type
+    local object_id
+
+    object_type=$(prompt_user_for_value "Object type (e.g. index-pattern, dashboard, etc.)")
+    log_info "Object type: $object_type"
+    object_id=$(prompt_user_for_value "Object ID")
+    log_info "Object ID: $object_id"
+
+    local response
+    local http_code
+    local payload
+    local path
+
+    path="/api/saved_objects/$object_type/$object_id"
+
+    log_wait "Using $path to fetch saved object of type $object_type with ID $object_id..."
+
+    response=$(
+        curl \
+        -s \
+        -w "\n%{http_code}" \
         -X GET \
-        "$KIBANA_HOST/api/saved_objects/_find?type=index-pattern&search_fields=title&search=$index_pattern_id" \
+        -H "kbn-xsrf: true" \
+        -u "$ES_USERNAME":"$ES_PASSWORD" \
+        "$KIBANA_HOST_ORIGIN$path"
+    )
+    http_code=$(echo "$response" | tail -n1)
+    if [[ "$http_code" -ne 200 ]]; then
+        log_error "Unable to fetch saved object. HTTP status code: $http_code"
+        log_error "Response: $response"
+        return 1
+    fi
+    payload=$(echo "$response" | awk 'NR==1{print; exit}')
+    if [[ -z "$payload" ]]; then
+        log_error "Empty payload in response from the server."
+        return 1
+    fi
+    if ! echo "$payload" | jq empty; then
+        log_error "Invalid JSON response."
+        log_error "Response: $payload"
+        return 1
+    fi
+    # log_success "$path output:\n$(echo "$payload" | jq .)"
+    log_success "$path output:\n"
+    log_string "$(echo "$payload" | jq .)"
+    log_empty_line
+    
+
+    if [[ "$object_type" == "dashboard" ]]; then
+        log_info "attributes.panelsJSON:\n"
+        log_string "$(echo "$payload" | jq -r '.attributes.panelsJSON' | jq .)"
+    fi
+    log_empty_line
+}
+
+show_data_views() {
+    log_trace "show_data_views()"
+
+    local response
+    local http_code
+    local payload
+    local path
+
+    # path="/api/data_views/"
+    path="/api/saved_objects/_find?type=index-pattern&per_page=10000"
+
+    log_warning "Using Saved Objects API returns only data views with 'hiddenType' set to 'false'.\n
+To list all data views just like in Kibana >> Stack Management >> Data views we need to access .kibana index directly (use 'show objects of type' menu item)."
+
+    log_wait "Fetching data views (formerly known as 'index patterns')..."
+
+    response=$(
+        curl \
+        -s \
+        -w "\n%{http_code}" \
+        -X GET \
+        -H "kbn-xsrf: true" \
+        -u "$ES_USERNAME":"$ES_PASSWORD" \
         -H 'Content-Type: application/json' \
-        -H 'kbn-xsrf: true')
+        "$KIBANA_HOST_ORIGIN$path"
+    )
+
+    http_code=$(echo "$response" | tail -n1)
+    if [[ "$http_code" -ne 200 ]]; then
+        log_error "Unable to fetch data views. HTTP status code: $http_code"
+        log_error "Response: $response"
+        return 1
+    fi
+
+    payload=$(echo "$response" | awk 'NR==1{print; exit}')
+    if [[ -z "$payload" ]]; then
+        log_error "Empty payload in response from the server."
+        return 1
+    fi
+
+    if ! echo "$payload" | jq empty; then
+        log_error "Invalid JSON response."
+        log_error "Response: $payload"
+        return 1
+    fi
+
+    # printf "%s" "$payload"
+    log_success "$path output:\n$(echo "$payload" | jq .)"
+    log_empty_line
+
+    log_info "Total number of data views: $(echo "$payload" | jq '.total')"
+    log_empty_line
+    log_info "List of data views (compact):\n$(echo "$payload" | \
+        jq -r '.saved_objects[] | {id:"\(.id)",Name:"\(.attributes.name)",Title:"\(.attributes.title)"}')"
+    log_empty_line
+}
+
+show_data_view() {
+    log_trace "show_data_view()"
+
+    local data_view_id
+    data_view_id=$(prompt_user_for_value "Data view ID")
+    log_info "Data view ID: $data_view_id"
+
+    local response
+    local http_code
+    local payload
+    # local path="/api/data_views/_find?id=$data_view_id"
+
+
+    local path="/.kibana*/_search"
+    local source_fields=true
+    local type="index-pattern"
+
+    log_wait "Fetching saved objects of type $type with id $data_view_id directly from Kibana index ($path)..."
+
+    local data
+    data='
+    {
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "term": {
+                            "type": "index-pattern"
+                        }
+                    },
+                    {
+                        "term": {
+                            "_id": "index-pattern:'"$data_view_id"'"
+                        }
+                    }
+                ]
+            }
+        },
+        "_source": '"$source_fields"',
+        "size": 10000
+    }'
+
+    response=$(
+        curl \
+        -s \
+        -w "\n%{http_code}" \
+        -X POST \
+        -u "$ES_USERNAME":"$ES_PASSWORD" \
+        -H "Content-Type: application/json" \
+        -d "$data" \
+        "$ES_HOST$path"
+    )
+
+    http_code=$(echo "$response" | tail -n1)
+    if [[ "$http_code" -ne 200 ]]; then
+        log_error "Unable to fetch data view. HTTP status code: $http_code"
+        log_error "Response: $response"
+        return 1
+    fi
+
+    payload=$(echo "$response" | awk 'NR==1{print; exit}')
+    if [[ -z "$payload" ]]; then
+        log_error "Empty payload in response from the server."
+        return 1
+    fi
+
+    if ! echo "$payload" | jq empty; then
+        log_error "Invalid JSON response."
+        log_error "Response: $payload"
+        return 1
+    fi
+
+    # printf "%s" "$payload"
+    log_success "$path output:\n$(echo "$payload" | jq .)"
+    log_empty_line
 }
 
 show_available_kibana_privileges(){ 
@@ -6814,7 +7814,7 @@ show_available_kibana_privileges(){
         -X GET \
         -H "kbn-xsrf: true" \
         -u "$ES_USERNAME":"$ES_PASSWORD" \
-        "$KIBANA_HOST$path"
+        "$KIBANA_HOST_ORIGIN$path"
     )
 
     http_code=$(echo "$response" | tail -n1)
@@ -6854,7 +7854,7 @@ show_user_privileges() {
         -X GET \
         -H "kbn-xsrf: true" \
         -u "$ES_USERNAME":"$ES_PASSWORD" \
-        "$KIBANA_HOST$path"
+        "$KIBANA_HOST_ORIGIN$path"
     )
 
     http_code=$(echo "$response" | tail -n1)
@@ -6888,8 +7888,11 @@ kibana_menu(){
         "show current space"
         "show saved objects allowed types"
         "show objects of type"
-        "show objects with tag"
-        "show index pattern"
+        "show/export objects with tag"
+        "import saved objects (ndjson file)"
+        "show saved object"
+        "show data views"
+        "show data view"
         "show available Kibana privileges"
         "show user privileges"
         "EXIT"
@@ -6914,11 +7917,20 @@ kibana_menu(){
                     "show objects of type")
                         show_objects_of_type
                         ;;
-                    "show objects with tag")
+                    "show/export objects with tag")
                         show_objects_with_tag
                         ;;
-                    "show index pattern")
-                        show_index_pattern
+                    "import saved objects (ndjson file)")
+                        import_saved_objects_handler
+                        ;;
+                    "show saved object")
+                        show_saved_object
+                        ;;
+                    "show data views")
+                       show_data_views
+                        ;;
+                    "show data view")
+                        show_data_view
                         ;;
                     "show available Kibana privileges")
                         show_available_kibana_privileges
@@ -7001,10 +8013,15 @@ main() {
     # log_info "KIBANA_USERNAME=$KIBANA_USERNAME"
     # log_info "KIBANA_PASSWORD=$KIBANA_PASSWORD"
     log_info "ES_HOST=$ES_HOST"
-    log_info "KIBANA_HOST=$KIBANA_HOST"
+    log_info "KIBANA_HOST_ORIGIN=$KIBANA_HOST_ORIGIN"
+    log_info "KIBANA_HOST_TARGET=$KIBANA_HOST_TARGET"
 
-    if [[ ! $KIBANA_HOST =~ ^https:// ]]; then
-        KIBANA_HOST="https://$KIBANA_HOST"
+    if [[ ! $KIBANA_HOST_ORIGIN =~ ^https:// ]]; then
+        KIBANA_HOST_ORIGIN="https://$KIBANA_HOST_ORIGIN"
+    fi
+
+    if [[ ! $KIBANA_HOST_TARGET =~ ^https:// ]]; then
+        KIBANA_HOST_TARGET="https://$KIBANA_HOST_TARGET"
     fi
 
     main_menu
