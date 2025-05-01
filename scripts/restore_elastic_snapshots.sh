@@ -151,7 +151,7 @@ build_list_of_indices_to_include() {
     echo "Default indices to include: $DEFAULT_INCLUDED_INDICES" >&2
 
     # Prompt user for indices to include e.g. .alerts-observability-*,.transform-notifications-*
-    read -p "Enter a comma-separated list of indices to include in the restore operation (leave empty for all): " user_included_indices
+    read -p "Enter a comma-separated list of indices to include in the restore operation (wildcards allowed; leave empty for all): " user_included_indices
 
     # Merge DEFAULT_INCLUDED_INDICES and user_included_indices
     if [[ -n "$user_included_indices" ]]; then
@@ -263,6 +263,17 @@ get_user_input_rename_replacement() {
     echo $rename_replacement
 }
 
+get_user_input_ignore_index_settings() {
+    local ignore_index_settings=""
+
+    # Prompt user for ignore index settings
+    # e.g. 
+    # "index.lifecycle.name","index.default_pipeline","index.final_pipeline"
+    read -r -p "Enter 'ignore_index_settings' value (e.g. \"index.routing.allocation.include.size\",\"index.lifecycle.name\"; leave empty for none): " ignore_index_settings
+
+    echo "$ignore_index_settings"
+}
+
 show_aliases_for_indices() {
     local indices="$1"
 
@@ -275,13 +286,13 @@ show_aliases_for_indices() {
     )
 
     # Iterate over each index and get its aliases
-    for index in $(echo $indices | tr "," "\n"); do
-        aliases=$(echo $response | jq --arg index "$index" '.[$index].aliases? | select(. != null and . != {}) | keys[]')
+    for index in $(echo "$indices" | tr "," "\n"); do
+        aliases=$(echo "$response" | jq --arg index "$index" '.[$index].aliases? | select(. != null and . != {}) | keys[]')
         if [[ -z "$aliases" ]]; then
-            echo "No aliases found for index: $index"
+            # echo "No aliases found for index: $index"
             continue
         fi
-        echo "Aliases for index $index: " && echo $aliases | jq .
+        echo "Aliases for index $index: " && echo "$aliases" | jq .
     done
 
     # for index in $(echo $indices | tr "," "\n"); do
@@ -299,6 +310,9 @@ show_aliases_for_indices() {
 #   - For data streams, delete the entire stream if it exists
 #   - Ensure the required index templates exist in the target cluster before restoring. If they don't, manually create them first
 main() {
+    echo "Use manage_elastic_cluster.sh script to manage snapshots."
+    exit 0
+
     echo "Bash version: $BASH_VERSION"
     # # Check if username and password were provided
     # if [ "$#" -ne 2 ]; then
@@ -439,7 +453,7 @@ main() {
             RENAME_PATTERN=$(get_user_input_rename_pattern)
             echo "Rename pattern: $RENAME_PATTERN"
 
-            if [[ ! -z "$RENAME_PATTERN" ]]; then
+            if [[ -n "$RENAME_PATTERN" ]]; then
                 request_body="$request_body,
                 \"rename_pattern\": \"$RENAME_PATTERN\""
             fi
@@ -448,9 +462,18 @@ main() {
             RENAME_REPLACEMENT=$(get_user_input_rename_replacement)
             echo "Rename replacement: $RENAME_REPLACEMENT"
 
-            if [[ ! -z "$RENAME_REPLACEMENT" ]]; then
+            if [[ -n "$RENAME_REPLACEMENT" ]]; then
                 request_body="$request_body,
                 \"rename_replacement\": \"$RENAME_REPLACEMENT\""
+            fi
+
+            echo
+            IGNORE_INDEX_SETTINGS=$(get_user_input_ignore_index_settings)
+            echo "Ignore index settings: $IGNORE_INDEX_SETTINGS"
+
+            if [[ -n "$IGNORE_INDEX_SETTINGS" ]]; then
+                request_body="$request_body,
+                \"ignore_index_settings\": [$IGNORE_INDEX_SETTINGS]"
             fi
 
             request_body="$request_body
@@ -460,7 +483,7 @@ main() {
             echo "Request body: $request_body"
 
             echo
-            read -p "Proceed with restore? (y/n): " confirm
+            read -r -p "Proceed with restore? (y/n): " confirm
             if [[ "$confirm" == "y" ]]; then
                 restore_snapshot "$latest_snapshot" "$request_body"
 
